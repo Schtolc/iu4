@@ -1,12 +1,20 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 )
 
+type Ping struct {
+	Text string `json:"text"`
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hi there, I love you for %s!", r.URL.Path[1:])
+	ping := &Ping{
+		Text: "IU4 Ping",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ping)
 }
 
 func main() {
