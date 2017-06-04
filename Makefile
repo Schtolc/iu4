@@ -1,0 +1,2 @@
+deafult:
+	go build
