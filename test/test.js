@@ -154,4 +154,16 @@ describe('RestApi', function() {
 			});
 		});
 	});
+
+	describe('/list', function() {
+		it('list files', function(done) {
+			chai.request('http://127.0.0.1:8080')
+			.get('/list')
+			.end(function(err, res) {
+				res.should.have.status(200);
+				res.body.files.should.be.deep.equal(['murat.jpg','okp.pdf']);
+				done();
+			});
+		});
+	});
 });

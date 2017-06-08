@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -30,6 +31,10 @@ type Download struct {
 	Filename string `json:"filename"`
 }
 
+type List struct {
+	Files []string `json:"files"`
+}
+
 func request_failed(w http.ResponseWriter, reason string) {
 	error_ := &Error{
 		Reason: reason,
@@ -42,6 +47,33 @@ func wrong_url_handler(w http.ResponseWriter, r *http.Request) {
 	log.Print(r)
 
 	request_failed(w, "Page do not exist")
+}
+
+func list_handler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	log.Print(r)
+
+	if r.Method != "GET" {
+		request_failed(w, "Wrong method")
+		return
+	}
+
+	files, err := ioutil.ReadDir("db/")
+	if err != nil {
+		request_failed(w, "Internal error")
+		return
+	}
+
+	var filenames []string
+
+	for _, file := range files {
+		filenames = append(filenames, file.Name())
+	}
+
+	list := &List{
+		Files: filenames,
+	}
+	json.NewEncoder(w).Encode(list)
 }
 
 func ping_handler(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +89,12 @@ func ping_handler(w http.ResponseWriter, r *http.Request) {
 func download_handler(w http.ResponseWriter, r *http.Request) {
 	log.Print(r)
 
+	if r.Method != "POST" {
+		w.Header().Set("Content-Type", "application/json")
+		request_failed(w, "Wrong method")
+		return
+	}
+
 	var download Download
 	if err := json.NewDecoder(r.Body).Decode(&download); err != nil ||
 		download.Filename == "" ||
@@ -70,8 +108,8 @@ func download_handler(w http.ResponseWriter, r *http.Request) {
 	filepath := filepath.Join("db", download.Filename)
 
 	if _, err := os.Stat(filepath); err != nil {
-		w.Header().Set("Content-Type", "application/json")
 		log.Print(err)
+		w.Header().Set("Content-Type", "application/json")
 		request_failed(w, "File not exist")
 		return
 	}
@@ -134,5 +172,6 @@ func main() {
 	http.HandleFunc("/ping", ping_handler)
 	http.HandleFunc("/upload", upload_handler)
 	http.HandleFunc("/download", download_handler)
+	http.HandleFunc("/list", list_handler)
 	http.ListenAndServe(":8080", nil)
 }
