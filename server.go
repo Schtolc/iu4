@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 const MAX_FILE_SIZE int = 8388608 // 268435456 TODO
@@ -22,6 +24,10 @@ type Error struct {
 type Upload struct {
 	Filename string `json:"filename"`
 	Mimetype string `json:"mimetype"`
+}
+
+type Download struct {
+	Filename string `json:"filename"`
 }
 
 func request_failed(w http.ResponseWriter, reason string) {
@@ -46,6 +52,31 @@ func ping_handler(w http.ResponseWriter, r *http.Request) {
 		Text: "IU4 Ping",
 	}
 	json.NewEncoder(w).Encode(ping)
+}
+
+func download_handler(w http.ResponseWriter, r *http.Request) {
+	log.Print(r)
+
+	var download Download
+	if err := json.NewDecoder(r.Body).Decode(&download); err != nil ||
+		download.Filename == "" ||
+		strings.ContainsRune(download.Filename, '/') {
+		log.Print(err)
+		w.Header().Set("Content-Type", "application/json")
+		request_failed(w, "Wrong request")
+		return
+	}
+
+	filepath := filepath.Join("db", download.Filename)
+
+	if _, err := os.Stat(filepath); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		log.Print(err)
+		request_failed(w, "File not exist")
+		return
+	}
+
+	http.ServeFile(w, r, filepath)
 }
 
 func upload_handler(w http.ResponseWriter, r *http.Request) {
@@ -102,5 +133,6 @@ func main() {
 	http.HandleFunc("/", wrong_url_handler)
 	http.HandleFunc("/ping", ping_handler)
 	http.HandleFunc("/upload", upload_handler)
+	http.HandleFunc("/download", download_handler)
 	http.ListenAndServe(":8080", nil)
 }

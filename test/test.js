@@ -97,4 +97,61 @@ describe('RestApi', function() {
 			});
 		});
 	});
+
+	describe('/download', function() {
+		it('downloaded pdf file', function(done) {
+			chai.request('http://127.0.0.1:8080')
+			.post('/download')
+			.send({filename: 'okp.pdf'})
+			.end(function(err, res) {
+				res.should.have.status(200);
+				res.should.have.header('Content-Type', 'application/pdf');
+				done();
+			});
+		});
+
+		it('downloaded jpg file', function(done) {
+			chai.request('http://127.0.0.1:8080')
+			.post('/download')
+			.send({filename: 'murat.jpg'})
+			.end(function(err, res) {
+				res.should.have.status(200);
+				res.should.have.header('Content-Type', 'image/jpeg');
+				done();
+			});
+		});
+
+		it('downloaded wrong request', function(done) {
+			chai.request('http://127.0.0.1:8080')
+			.post('/download')
+			.send({filenam: 'murat.jpg'})
+			.end(function(err, res) {
+				res.should.have.status(200);
+				res.body.should.have.property('reason', 'Wrong request');
+				done();
+			});
+		});
+
+		it('download non-existing file', function(done) {
+			chai.request('http://127.0.0.1:8080')
+			.post('/download')
+			.send({filename: 'bad.png'})
+			.end(function(err, res) {
+				res.should.have.status(200);
+				res.body.should.have.property('reason', 'File not exist');
+				done();
+			});
+		});
+
+		it('download strange file', function(done) {
+			chai.request('http://127.0.0.1:8080')
+			.post('/download')
+			.send({filename: '../server.go'})
+			.end(function(err, res) {
+				res.should.have.status(200);
+				res.body.should.have.property('reason', 'Wrong request');
+				done();
+			});
+		});
+	});
 });
