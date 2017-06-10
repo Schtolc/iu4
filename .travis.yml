@@ -12,6 +12,5 @@ before_install:
 
 script:
   - make
-  - node_modules/webpack/bin/webpack.js
   - $TRAVIS_BUILD_DIR/iu4 &
   - npm test
