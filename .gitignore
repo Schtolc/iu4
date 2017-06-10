@@ -1,3 +1,4 @@
 iu4server
 node_modules/
 db/
+bundle.js
